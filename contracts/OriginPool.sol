@@ -23,6 +23,7 @@ error StreamAlreadyActive();
 /// @title Origin Pool to Receive Streams.
 /// @notice This is a super app. On stream (create|update|delete), this contract sends a message
 /// accross the bridge to the DestinationPool.
+
 contract OriginPool {
 
     /// @dev Emitted when flow message is sent across the bridge.
@@ -38,21 +39,21 @@ contract OriginPool {
     event RebalanceMessageSent(uint256 amount);
 
     /// @dev Nomad Domain of this contract.
-    uint32 public immutable originDomain;
+    uint32 public immutable originDomain = 1735353714;
 
     /// @dev Nomad Domain of the destination contract.
-    uint32 public immutable destinationDomain;
+    uint32 public immutable destinationDomain = 9991;
 
     /// @dev Destination contract address
     address public destination;
 
     /// @dev Connext contracts.
-    IConnext public immutable connext;
+    IConnext public immutable connext = IConnext(0xFCa08024A6D4bCc87275b1E4A1E22B71fAD7f649);
 
     /// @dev Superfluid contracts.
-    ISuperfluid public immutable host;
-    IConstantFlowAgreementV1 public immutable cfa;
-    ISuperToken public immutable token;
+    ISuperfluid public immutable host = ISuperfluid(0x22ff293e14F1EC3A09B137e9e06084AFd63adDF9);
+    IConstantFlowAgreementV1 public immutable cfa = IConstantFlowAgreementV1(0xEd6BcbF6907D4feEEe8a8875543249bEa9D308E8);
+    ISuperToken public immutable token = ISuperToken(0x9D4aD766C0ef90829d04A6B142196E53D642F631);
 
     /// @dev Validates callbacks.
     /// @param _agreementClass MUST be CFA.
@@ -65,28 +66,28 @@ contract OriginPool {
     }
 
     constructor(
-        uint32 _originDomain,
-        uint32 _destinationDomain,
-        // address _destination,
-        IConnext _connext,
-        ISuperfluid _host,
-        IConstantFlowAgreementV1 _cfa,
-        ISuperToken _token
+        // uint32 _originDomain,
+        // uint32 _destinationDomain,
+        // // address _destination,
+        // IConnext _connext,
+        // ISuperfluid _host,
+        // IConstantFlowAgreementV1 _cfa,
+        // ISuperToken _token
     ) {
-        originDomain = _originDomain;
-        destinationDomain = _destinationDomain;
-        // destination = _destination;
-        connext = _connext;
+        // originDomain = _originDomain;
+        // destinationDomain = _destinationDomain;
+        // // destination = _destination;
+        // connext = _connext;
         // executor = _connext.executor();
-        host = _host;
-        cfa = _cfa;
-        token = _token;
+        // host = _host;
+        // cfa = _cfa;
+        // token = _token;
 
         // surely this can't go wrong
-        IERC20(_token.getUnderlyingToken()).approve(address(_connext), type(uint256).max);
+        IERC20(token.getUnderlyingToken()).approve(address(connext), type(uint256).max);
 
         // register app
-        _host.registerApp(
+        host.registerApp(
             SuperAppDefinitions.APP_LEVEL_FINAL |
             SuperAppDefinitions.BEFORE_AGREEMENT_CREATED_NOOP |
             SuperAppDefinitions.BEFORE_AGREEMENT_UPDATED_NOOP |
