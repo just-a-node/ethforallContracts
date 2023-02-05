@@ -65,35 +65,35 @@ contract OriginPool {
         _;
     }
 
-    constructor(
-        // uint32 _originDomain,
-        // uint32 _destinationDomain,
-        // // address _destination,
-        // IConnext _connext,
-        // ISuperfluid _host,
-        // IConstantFlowAgreementV1 _cfa,
-        // ISuperToken _token
-    ) {
-        // originDomain = _originDomain;
-        // destinationDomain = _destinationDomain;
-        // // destination = _destination;
-        // connext = _connext;
-        // executor = _connext.executor();
-        // host = _host;
-        // cfa = _cfa;
-        // token = _token;
+    // constructor(
+    //     // uint32 _originDomain,
+    //     // uint32 _destinationDomain,
+    //     // // address _destination,
+    //     // IConnext _connext,
+    //     // ISuperfluid _host,
+    //     // IConstantFlowAgreementV1 _cfa,
+    //     // ISuperToken _token
+    // ) {
+    //     // originDomain = _originDomain;
+    //     // destinationDomain = _destinationDomain;
+    //     // // destination = _destination;
+    //     // connext = _connext;
+    //     // executor = _connext.executor();
+    //     // host = _host;
+    //     // cfa = _cfa;
+    //     // token = _token;
 
-        // surely this can't go wrong
-        IERC20(token.getUnderlyingToken()).approve(address(connext), type(uint256).max);
+    //     // surely this can't go wrong
+    //     IERC20(token.getUnderlyingToken()).approve(address(connext), type(uint256).max);
 
-        // register app
-        host.registerApp(
-            SuperAppDefinitions.APP_LEVEL_FINAL |
-            SuperAppDefinitions.BEFORE_AGREEMENT_CREATED_NOOP |
-            SuperAppDefinitions.BEFORE_AGREEMENT_UPDATED_NOOP |
-            SuperAppDefinitions.BEFORE_AGREEMENT_TERMINATED_NOOP
-        );
-    }
+    //     // register app
+    //     host.registerApp(
+    //         SuperAppDefinitions.APP_LEVEL_FINAL |
+    //         SuperAppDefinitions.BEFORE_AGREEMENT_CREATED_NOOP |
+    //         SuperAppDefinitions.BEFORE_AGREEMENT_UPDATED_NOOP |
+    //         SuperAppDefinitions.BEFORE_AGREEMENT_TERMINATED_NOOP
+    //     );
+    // }
 
     // demoday hack. this is not permanent.
     bool done;
