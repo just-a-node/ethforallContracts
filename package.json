@@ -10,11 +10,11 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^2.0.1",
     "@connext/nxtp-contracts": "^0.2.1-rc.16",
     "@connext/smart-contracts": "^0.2.1-rc.27",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.1",
     "@nomiclabs/hardhat-ethers": "^2.0.0",
     "@nomiclabs/hardhat-etherscan": "^3.0.0",
     "@openzeppelin/contracts": "^4.8.1",
@@ -25,9 +25,12 @@
     "@types/chai": "^4.2.0",
     "@types/mocha": ">=9.1.0",
     "chai": "^4.2.0",
+    "hardhat": "^2.12.6",
     "hardhat-gas-reporter": "^1.0.8",
     "solidity-coverage": "^0.8.1",
-    "typechain": "^8.1.0",
-    "hardhat": "^2.12.6"
+    "typechain": "^8.1.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3"
   }
 }

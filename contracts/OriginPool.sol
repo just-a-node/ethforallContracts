@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPLv3
 pragma solidity 0.8.17;
+import "hardhat/console.sol";
 
 import {IDestinationPool} from "../interfaces/IDestinationPool.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -65,35 +66,36 @@ contract OriginPool {
         _;
     }
 
-    // constructor(
-    //     // uint32 _originDomain,
-    //     // uint32 _destinationDomain,
-    //     // // address _destination,
-    //     // IConnext _connext,
-    //     // ISuperfluid _host,
-    //     // IConstantFlowAgreementV1 _cfa,
-    //     // ISuperToken _token
-    // ) {
-    //     // originDomain = _originDomain;
-    //     // destinationDomain = _destinationDomain;
-    //     // // destination = _destination;
-    //     // connext = _connext;
-    //     // executor = _connext.executor();
-    //     // host = _host;
-    //     // cfa = _cfa;
-    //     // token = _token;
+    constructor(
+        // uint32 _originDomain,
+        // uint32 _destinationDomain,
+        // // address _destination,
+        // IConnext _connext,
+        // ISuperfluid _host,
+        // IConstantFlowAgreementV1 _cfa,
+        // ISuperToken _token
+    ) {
+        // originDomain = _originDomain;
+        // destinationDomain = _destinationDomain;
+        // // destination = _destination;
+        // connext = _connext;
+        // executor = _connext.executor();
+        // host = _host;
+        // cfa = _cfa;
+        // token = _token;
 
-    //     // surely this can't go wrong
-    //     IERC20(token.getUnderlyingToken()).approve(address(connext), type(uint256).max);
+        // surely this can't go wrong
+        IERC20(token.getUnderlyingToken()).approve(address(connext), type(uint256).max);
 
-    //     // register app
-    //     host.registerApp(
-    //         SuperAppDefinitions.APP_LEVEL_FINAL |
-    //         SuperAppDefinitions.BEFORE_AGREEMENT_CREATED_NOOP |
-    //         SuperAppDefinitions.BEFORE_AGREEMENT_UPDATED_NOOP |
-    //         SuperAppDefinitions.BEFORE_AGREEMENT_TERMINATED_NOOP
-    //     );
-    // }
+        // register app
+        host.registerApp(
+            SuperAppDefinitions.APP_LEVEL_FINAL |
+            SuperAppDefinitions.BEFORE_AGREEMENT_CREATED_NOOP |
+            SuperAppDefinitions.BEFORE_AGREEMENT_UPDATED_NOOP |
+            SuperAppDefinitions.BEFORE_AGREEMENT_TERMINATED_NOOP
+        );
+        console.log("Address performing the approval", msg.sender);
+    }
 
     // demoday hack. this is not permanent.
     bool done;
@@ -111,6 +113,12 @@ contract OriginPool {
     /// @dev Rebalances pools. This sends funds over the bridge to the destination.
     function rebalance() external {
         _sendRebalanceMessage();
+    }
+
+    string test;
+    function testing(string memory a) public returns (string memory) {
+        test = a;
+        return test;
     }
 
     // //////////////////////////////////////////////////////////////

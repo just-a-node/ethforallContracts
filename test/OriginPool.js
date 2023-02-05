@@ -14,13 +14,24 @@ const logger = (context, log) => {
 }
 
 describe ('OriginPool Contract', function () {
-    it ("Deploying OriginPool Contract", async function() {
-        const [owner, otherAccount] = await ethers.getSigners();
-        logger('OriginPool contract Deploying address', owner.address);
-
+    const deployOriginPool = async () => {
+        const [account1, account2] = await ethers.getSigners();
         const OriginPool = await ethers.getContractFactory("OriginPool");
         const originPool = await OriginPool.deploy(); // the constructor values are hardcoded
         await originPool.deployed();
+        return {originPool, account1, account2};
+    }
+
+    it ("Deploying OriginPool Contract", async function() {
+        const {originPool, account1} = await loadFixture(deployOriginPool);
+        logger("Address of Deployer's account", account1.address);
         logger("Contract address ", originPool.address);
+    })
+
+    it ("Adding 2 numbers", async function() {
+        const {originPool} = await loadFixture(deployOriginPool);
+        const result = await originPool.testing("afsfafasfdfga");
+        logger("Test result", result);
+        
     })
 })
