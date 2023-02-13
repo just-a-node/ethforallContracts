@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: AGPLv3
 pragma solidity 0.8.17;
+import "hardhat/console.sol";
+
 
 import {IDestinationPool} from "../interfaces/IDestinationPool.sol";
 
-import {IConnext} from "@connext/nxtp-contracts/contracts/core/connext/interfaces/IConnext.sol";
-import {IXReceiver} from "@connext/nxtp-contracts/contracts/core/connext/interfaces/IXReceiver.sol";
+import {IConnext} from "@connext/smart-contracts/contracts/core/connext/interfaces/IConnext.sol";
+import {IXReceiver} from "@connext/smart-contracts/contracts/core/connext/interfaces/IXReceiver.sol";
 
-import {IConstantFlowAgreementV1} from 
+import {IConstantFlowAgreementV1} from  
 "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/IConstantFlowAgreementV1.sol";
 import {
     ISuperfluid,
@@ -14,15 +16,18 @@ import {
     SuperAppDefinitions
 } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// import "../interfaces/IERC4626.sol";
+import "../interfaces/IERC20.sol";
+
+// import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // import "https://github.com/transmissions11/solmate/blob/main/src/mixins/ERC4626.sol";
-import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
+// import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
 error Unauthorized();
-error InvalidDomain();
+error InvalidDomain(); 
 error InvalidOriginContract();
 
-abstract contract DestinationPool is IDestinationPool, ERC4626 {
+contract DestinationPool is IXReceiver, IDestinationPool {
 
     /// @dev Emitted when connext delivers a flow message.
     /// @param account Account to stream to.
@@ -39,7 +44,7 @@ abstract contract DestinationPool is IDestinationPool, ERC4626 {
     uint32 public immutable originDomain = 1735353714;
 
     /// @dev Origin contract address.
-    address public immutable originContract;
+    address public originContract;
 
     /// @dev Connext contracts.
     IConnext public immutable connext = IConnext(0x2334937846Ab2A3FCE747b32587e1A1A2f6EEC5a);
@@ -70,29 +75,35 @@ abstract contract DestinationPool is IDestinationPool, ERC4626 {
         _;
     }
 
+    // constructor(
+    //     address _originContract
+    // ) ERC4626(
+    //     IERC20(address(token)), 
+    //     // xPool Super DAI
+    //     string(abi.encodePacked("xPool ", token.name())),
+    //     // xpDAIx // kek
+    //     string(abi.encodePacked("xp", token.symbol()))
+    // ) {
+    //     originContract = _originContract;
+
+    //     // approve token to upgrade
+    //     IERC20(token.getUnderlyingToken()).approve(address(token), type(uint256).max);
+    // }
+
     constructor(
-        // uint32 _originDomain,
         address _originContract
-        // IConnext _connext,
-        // ISuperfluid _host,
-        // IConstantFlowAgreementV1 _cfa,
-        // ISuperToken _token
-    ) ERC4626(
-        IERC20(address(token)) 
-        // xPool Super DAI
-        // string(abi.encodePacked("xPool ", token.name())),
-        // // xpDAIx // kek
-        // string(abi.encodePacked("xp", token.symbol()))
+        // ERC20 _underlying,
+        // string memory _name,
+        // string memory _symbol
     ) {
-        // originDomain = _originDomain;
         originContract = _originContract;
-        // host = _host;
-        // cfa = _cfa;
-        // token = _token;
-        // connext = _connext;
 
         // approve token to upgrade
-        IERC20(token.getUnderlyingToken()).approve(address(token), type(uint256).max);
+        // IERC20(token.getUnderlyingToken()).approve();
+    }
+
+    function changeOriginContract(address origin) public {
+        originContract = origin;
     }
 
     // //////////////////////////////////////////////////////////////
@@ -100,20 +111,23 @@ abstract contract DestinationPool is IDestinationPool, ERC4626 {
     // //////////////////////////////////////////////////////////////
 
     /// @dev Total assets including fees not yet rebalanced.
-    function totalAssets() public view override returns (uint256) {
-        uint256 balance = token.balanceOf(address(this));
+    // function totalAssets() public view override returns (uint256) {
+    //     uint256 balance = token.balanceOf(address(this));
 
-        uint256 feesSinceUpdate =
-            uint256(uint96(feeAccrualRate)) * (lastFeeAccrualUpdate - block.timestamp);
+    //     uint256 feesSinceUpdate =
+    //         uint256(uint96(feeAccrualRate)) * (lastFeeAccrualUpdate - block.timestamp);
 
-        return balance + feesPending + feesSinceUpdate;
-    }
+    //     return balance + feesPending + feesSinceUpdate;
+    // }
 
     // //////////////////////////////////////////////////////////////
     // MESSAGE RECEIVERS
     // //////////////////////////////////////////////////////////////
 
-    string callData;
+    string public callData;
+    uint256 public ping = 0;
+    event updatingPing(address sender, uint256 pingCount);
+
     /** @notice Authenticated receiver function.
     * @param _callData Calldata containing the new greeting.
     */
@@ -124,10 +138,19 @@ abstract contract DestinationPool is IDestinationPool, ERC4626 {
         address _originSender,
         uint32 _origin,
         bytes memory _callData
-    ) external  onlySource(_originSender, _origin) returns (bytes memory) {
+    ) external returns (bytes memory) {
         // Unpack the _callData
         callData = abi.decode(_callData, (string));
-    
+        // some event will be triggered here which will call the chainlink 
+        // automation contracts then it will run the corresponding superfluid
+        // functions in this contract.
+        console.log("Received calldata ", callData);
+        updatePing(_originSender);
+    }
+
+    function updatePing(address sender) public {
+        ping = ping+1;
+        emit updatingPing (sender, ping);
     }
 
     /// @dev Flow message receiver.

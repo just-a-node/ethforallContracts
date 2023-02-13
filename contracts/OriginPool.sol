@@ -5,8 +5,8 @@ import "hardhat/console.sol";
 import {IDestinationPool} from "../interfaces/IDestinationPool.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IConnext} from "@connext/nxtp-contracts/contracts/core/connext/interfaces/IConnext.sol";
-
+import {IConnext} from "@connext/smart-contracts/contracts/core/connext/interfaces/IConnext.sol";
+ 
 import {IConstantFlowAgreementV1} from 
 "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/IConstantFlowAgreementV1.sol";
 
@@ -15,6 +15,10 @@ import {
     ISuperToken,
     SuperAppDefinitions
 } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+
+import {
+    SuperAppBase
+} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperAppBase.sol";
 
 error Unauthorized();
 error InvalidAgreement();
@@ -25,7 +29,7 @@ error StreamAlreadyActive();
 /// @notice This is a super app. On stream (create|update|delete), this contract sends a message
 /// accross the bridge to the DestinationPool.
 
-contract OriginPool {
+contract OriginPool is SuperAppBase {
 
     /// @dev Emitted when flow message is sent across the bridge.
     /// @param account Streamer account (only one-to-one address streaming for now).
@@ -47,6 +51,8 @@ contract OriginPool {
 
     /// @dev Destination contract address
     address public destination;
+    uint256 public cost = 1.0005003e18;
+    uint256 public relayerFeeCost = 0.10005003e18;
 
     /// @dev Connext contracts.
     IConnext public immutable connext = IConnext(0xFCa08024A6D4bCc87275b1E4A1E22B71fAD7f649);
@@ -54,7 +60,9 @@ contract OriginPool {
     /// @dev Superfluid contracts.
     ISuperfluid public immutable host = ISuperfluid(0x22ff293e14F1EC3A09B137e9e06084AFd63adDF9);
     IConstantFlowAgreementV1 public immutable cfa = IConstantFlowAgreementV1(0xEd6BcbF6907D4feEEe8a8875543249bEa9D308E8);
-    ISuperToken public immutable token = ISuperToken(0x9D4aD766C0ef90829d04A6B142196E53D642F631);
+    ISuperToken public immutable token = ISuperToken(0x3427910EBBdABAD8e02823DFe05D34a65564b1a0); // TESTx token
+    IERC20 public erc20Token = IERC20(0x7ea6eA49B0b0Ae9c5db7907d139D9Cd3439862a1); // TEST token
+
 
     /// @dev Validates callbacks.
     /// @param _agreementClass MUST be CFA.
@@ -101,8 +109,8 @@ contract OriginPool {
     bool done;
     error Done();
     function setDomain(address _destination) external {
-        if (done) revert Done();
-        done = true;
+        // if (done) revert Done();
+        // done = true;
         destination = _destination;
     }
 
@@ -125,11 +133,11 @@ contract OriginPool {
         bytes calldata agreementData,
         bytes calldata, // cbdata
         bytes calldata ctx
-    ) external isCallbackValid(agreementClass, superToken) returns (bytes memory) {
+    ) external override isCallbackValid(agreementClass, superToken) returns (bytes memory) {
         (address sender, ) = abi.decode(agreementData, (address,address));
 
         ( , int96 flowRate, , ) = cfa.getFlowByID(superToken, agreementId);
-
+        console.log("Calling afterAgreementCreated");
         _sendFlowMessage(sender, flowRate);
 
         return ctx;
@@ -142,11 +150,11 @@ contract OriginPool {
         bytes calldata agreementData,
         bytes calldata, // cbdata
         bytes calldata ctx
-    ) external isCallbackValid(agreementClass, superToken) returns (bytes memory) {
+    ) external override isCallbackValid(agreementClass, superToken) returns (bytes memory) {
         (address sender, ) = abi.decode(agreementData, (address, address));
 
         ( , int96 flowRate, , ) = cfa.getFlowByID(superToken, agreementId);
-
+        console.log("Calling afterAgreementUpgraded");
         _sendFlowMessage(sender, flowRate);
 
         return ctx;
@@ -159,9 +167,9 @@ contract OriginPool {
         bytes calldata agreementData,
         bytes calldata, // cbdata
         bytes calldata ctx
-    ) external isCallbackValid(agreementClass, superToken) returns (bytes memory) {
+    ) external override isCallbackValid(agreementClass, superToken) returns (bytes memory) {
         (address sender, ) = abi.decode(agreementData, (address,address));
-
+        console.log("calling afterAgreementTerminated");
         _sendFlowMessage(sender, 0);
 
         return ctx;
@@ -196,28 +204,34 @@ contract OriginPool {
 
     /// @dev Sends the flow message across the bridge.
     /// @param account The account streaming.
-    /// @param flowRate Flow rate, unadjusted.
-    function _sendFlowMessage(address account, int96 flowRate) internal {
+    /// @param flowRate Flow rate, unadjusted. 
+    function _sendFlowMessage(address account, int96 flowRate) public {
         uint256 buffer;
-        if (flowRate > 0) {
-            // we take a second buffer for the outpool
-            buffer = cfa.getDepositRequiredForFlowRate(token, flowRate);
-            token.transferFrom(account, address(this), buffer);
-            token.downgrade(buffer);
-        }
+        // if (flowRate > 0) {
+        //     // we take a second buffer for the outpool
+        //     buffer = cfa.getDepositRequiredForFlowRate(token, flowRate);
+        //     token.transferFrom(account, address(this), buffer);
+        //     token.approve(address(connext), cost);
+        //     token.downgrade(buffer);
+        // }
+        erc20Token.transferFrom(account, address(this), cost);
+        erc20Token.approve(address(connext), cost);
+        // erc20Token.downgrade(buffer); 
         // encode call
-        bytes memory callData = abi.encodeCall(
-            IDestinationPool(destination).receiveFlowMessage,
-            (account, flowRate)
-        );
-        uint256 relayerFee = 0;
+        // bytes memory callData = abi.encodeCall(
+        //     IDestinationPool(destination).receiveFlowMessage,
+        //     (account, flowRate)
+        // );
+
+        bytes memory callData = abi.encode("pingIncrement sample text");
+        uint256 relayerFee = relayerFeeCost;
         uint256 slippage = 0;
         connext.xcall{value: relayerFee}(
             destinationDomain,               // _destination: Domain ID of the destination chain
             destination,                     // _to: address receiving the funds on the destination
-            token.getUnderlyingToken(),      // _asset: address of the token contract
+            address(erc20Token),      // _asset: address of the token contract
             address(this),                      // _delegate: address that can revert or forceLocal on destination
-            buffer,                         // _amount: amount of tokens to transfer
+            cost,                         // _amount: amount of tokens to transfer
             slippage,                        // _slippage: the maximum amount of slippage the user will accept in BPS
             callData                         // _callData
         );
