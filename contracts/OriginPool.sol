@@ -29,6 +29,7 @@ error StreamAlreadyActive();
 /// @notice This is a super app. On stream (create|update|delete), this contract sends a message
 /// accross the bridge to the DestinationPool.
 
+// Author Team: Gullak 
 contract OriginPool is SuperAppBase {
 
     /// @dev Emitted when flow message is sent across the bridge.
