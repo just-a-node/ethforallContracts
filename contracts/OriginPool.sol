@@ -39,10 +39,10 @@ contract OriginPool {
     /// @param amount Amount rebalanced (sent).
     event RebalanceMessageSent(uint256 amount);
 
-    /// @dev Nomad Domain of this contract.
+    /// @dev Nomad Domain of this contract. Goreli testnet
     uint32 public immutable originDomain = 1735353714;
 
-    /// @dev Nomad Domain of the destination contract.
+    /// @dev Nomad Domain of the destination contract. Mumbai testnet
     uint32 public immutable destinationDomain = 9991;
 
     /// @dev Destination contract address
@@ -115,12 +115,6 @@ contract OriginPool {
         _sendRebalanceMessage();
     }
 
-    string test;
-    function testing(string memory a) public returns (string memory) {
-        test = a;
-        return test;
-    }
-
     // //////////////////////////////////////////////////////////////
     // SUPER APP CALLBACKS
     // //////////////////////////////////////////////////////////////
@@ -180,19 +174,14 @@ contract OriginPool {
     /// @dev Sends rebalance message with the full balance of this pool. No need to collect dust.
     function _sendRebalanceMessage() internal {
         uint256 balance = token.balanceOf(address(this));
-
         // downgrade for sending across the bridge
         token.downgrade(balance);
-
         // encode call
         bytes memory callData = abi.encodeWithSelector(
             IDestinationPool.receiveRebalanceMessage.selector
         );
-
-
         uint256 relayerFee = 0;
         uint256 slippage = 0;
-
         connext.xcall{value: relayerFee}(
             destinationDomain,               // _destination: Domain ID of the destination chain
             destination,                     // _to: address receiving the funds on the destination
@@ -202,7 +191,6 @@ contract OriginPool {
             slippage,                        // _slippage: the maximum amount of slippage the user will accept in BPS
             callData                         // _callData
         ); 
-
         emit RebalanceMessageSent(balance);
     }
 
@@ -211,26 +199,19 @@ contract OriginPool {
     /// @param flowRate Flow rate, unadjusted.
     function _sendFlowMessage(address account, int96 flowRate) internal {
         uint256 buffer;
-
         if (flowRate > 0) {
             // we take a second buffer for the outpool
             buffer = cfa.getDepositRequiredForFlowRate(token, flowRate);
-
             token.transferFrom(account, address(this), buffer);
-
             token.downgrade(buffer);
         }
-
         // encode call
         bytes memory callData = abi.encodeCall(
             IDestinationPool(destination).receiveFlowMessage,
             (account, flowRate)
         );
-
-
         uint256 relayerFee = 0;
         uint256 slippage = 0;
-
         connext.xcall{value: relayerFee}(
             destinationDomain,               // _destination: Domain ID of the destination chain
             destination,                     // _to: address receiving the funds on the destination
@@ -239,9 +220,7 @@ contract OriginPool {
             buffer,                         // _amount: amount of tokens to transfer
             slippage,                        // _slippage: the maximum amount of slippage the user will accept in BPS
             callData                         // _callData
-        ); 
-
-
+        );
         emit FlowMessageSent(account, flowRate);
     }
 }

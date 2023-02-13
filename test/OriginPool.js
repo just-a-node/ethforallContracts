@@ -27,11 +27,4 @@ describe ('OriginPool Contract', function () {
         logger("Address of Deployer's account", account1.address);
         logger("Contract address ", originPool.address);
     })
-
-    it ("Adding 2 numbers", async function() {
-        const {originPool} = await loadFixture(deployOriginPool);
-        const result = await originPool.testing("afsfafasfdfga");
-        logger("Test result", result);
-        
-    })
 })
