@@ -29,7 +29,6 @@ error StreamAlreadyActive();
 /// @notice This is a super app. On stream (create|update|delete), this contract sends a message
 /// accross the bridge to the DestinationPool.
 
-// Author Team: Gullak 
 contract OriginPool is SuperAppBase {
 
     /// @dev Emitted when flow message is sent across the bridge.
@@ -53,7 +52,7 @@ contract OriginPool is SuperAppBase {
     /// @dev Destination contract address
     address public destination;
     uint256 public cost = 1.0005003e18;
-    uint256 public relayerFeeCost = 0.10005003e18;
+    // uint256 public relayerFeeCost = 0.10005003e18;
 
     /// @dev Connext contracts.
     IConnext public immutable connext = IConnext(0xFCa08024A6D4bCc87275b1E4A1E22B71fAD7f649);
@@ -139,7 +138,7 @@ contract OriginPool is SuperAppBase {
 
         ( , int96 flowRate, , ) = cfa.getFlowByID(superToken, agreementId);
         console.log("Calling afterAgreementCreated");
-        _sendFlowMessage(sender, flowRate);
+        // _sendFlowMessage(sender, flowRate);
 
         return ctx;
     }
@@ -156,7 +155,7 @@ contract OriginPool is SuperAppBase {
 
         ( , int96 flowRate, , ) = cfa.getFlowByID(superToken, agreementId);
         console.log("Calling afterAgreementUpgraded");
-        _sendFlowMessage(sender, flowRate);
+        // _sendFlowMessage(sender, flowRate);
 
         return ctx;
     }
@@ -171,7 +170,7 @@ contract OriginPool is SuperAppBase {
     ) external override isCallbackValid(agreementClass, superToken) returns (bytes memory) {
         (address sender, ) = abi.decode(agreementData, (address,address));
         console.log("calling afterAgreementTerminated");
-        _sendFlowMessage(sender, 0);
+        // _sendFlowMessage(sender, 0);
 
         return ctx;
     }
@@ -202,12 +201,13 @@ contract OriginPool is SuperAppBase {
         ); 
         emit RebalanceMessageSent(balance);
     }
-
+ 
     /// @dev Sends the flow message across the bridge.
+    /// @dev This is a payable function, send ETH equivalant amount of relayerFee to this xcall function
     /// @param account The account streaming.
     /// @param flowRate Flow rate, unadjusted. 
-    function _sendFlowMessage(address account, int96 flowRate) public {
-        uint256 buffer;
+    function _sendFlowMessage(address account, int96 flowRate, uint256 relayerCost, uint256 slippageCost) external payable {
+        uint256 buffer; 
         // if (flowRate > 0) {
         //     // we take a second buffer for the outpool
         //     buffer = cfa.getDepositRequiredForFlowRate(token, flowRate);
@@ -225,13 +225,13 @@ contract OriginPool is SuperAppBase {
         // );
 
         bytes memory callData = abi.encode("pingIncrement sample text");
-        uint256 relayerFee = relayerFeeCost;
-        uint256 slippage = 0;
+        uint256 relayerFee = relayerCost;
+        uint256 slippage = slippageCost;
         connext.xcall{value: relayerFee}(
             destinationDomain,               // _destination: Domain ID of the destination chain
             destination,                     // _to: address receiving the funds on the destination
             address(erc20Token),      // _asset: address of the token contract
-            address(this),                      // _delegate: address that can revert or forceLocal on destination
+            msg.sender,                      // _delegate: address that can revert or forceLocal on destination
             cost,                         // _amount: amount of tokens to transfer
             slippage,                        // _slippage: the maximum amount of slippage the user will accept in BPS
             callData                         // _callData
