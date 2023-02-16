@@ -2,23 +2,12 @@
 pragma solidity 0.8.17;
 import "hardhat/console.sol";
 
-import {IDestinationPool} from "../interfaces/IDestinationPool.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import {IConnext} from "@connext/smart-contracts/contracts/core/connext/interfaces/IConnext.sol";
- 
-import {IConstantFlowAgreementV1} from 
-"@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/IConstantFlowAgreementV1.sol";
-
-import {
-    ISuperfluid,
-    ISuperToken,
-    SuperAppDefinitions
-} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
-
-import {
-    SuperAppBase
-} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperAppBase.sol";
+import { IDestinationPool } from "../interfaces/IDestinationPool.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IConnext } from "@connext/smart-contracts/contracts/core/connext/interfaces/IConnext.sol";
+import { IConstantFlowAgreementV1 } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/IConstantFlowAgreementV1.sol";
+import { ISuperfluid, ISuperToken, SuperAppDefinitions } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+import { SuperAppBase } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperAppBase.sol";
 
 error Unauthorized();
 error InvalidAgreement();
@@ -47,7 +36,6 @@ contract OriginPool is SuperAppBase {
     ISuperToken public immutable token = ISuperToken(0x3427910EBBdABAD8e02823DFe05D34a65564b1a0); // TESTx token
     IERC20 public erc20Token = IERC20(0x7ea6eA49B0b0Ae9c5db7907d139D9Cd3439862a1); // TEST token
 
-
     /// @dev Validates callbacks.
     /// @param _agreementClass MUST be CFA.
     /// @param _token MUST be supported token.
@@ -68,7 +56,6 @@ contract OriginPool is SuperAppBase {
     event RebalanceMessageSent(uint256 amount);
     event FlowTopupMessage(address indexed account, int96 currentFlowRate, uint topupAmount);
     event FlowStopMessage(address indexed account, address receiver);
-
 
     constructor() {
         // surely this can't go wrong
@@ -92,8 +79,6 @@ contract OriginPool is SuperAppBase {
     bool done;
     error Done();
     function setDomain(address _destination) external {
-        // if (done) revert Done();
-        // done = true;
         destination = _destination;
     }
 
@@ -118,7 +103,6 @@ contract OriginPool is SuperAppBase {
         bytes calldata ctx
     ) external override isCallbackValid(agreementClass, superToken) returns (bytes memory) {
         (address sender, ) = abi.decode(agreementData, (address,address));
-
         ( , int96 flowRate, , ) = cfa.getFlowByID(superToken, agreementId);
         console.log("Calling afterAgreementCreated");
         return ctx;
@@ -133,7 +117,6 @@ contract OriginPool is SuperAppBase {
         bytes calldata ctx
     ) external override isCallbackValid(agreementClass, superToken) returns (bytes memory) {
         (address sender, ) = abi.decode(agreementData, (address, address));
-
         ( , int96 flowRate, , ) = cfa.getFlowByID(superToken, agreementId);
         console.log("Calling afterAgreementUpgraded");
         return ctx;
