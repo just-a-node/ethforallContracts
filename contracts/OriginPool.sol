@@ -2,23 +2,12 @@
 pragma solidity 0.8.17;
 import "hardhat/console.sol";
 
-import {IDestinationPool} from "../interfaces/IDestinationPool.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import {IConnext} from "@connext/smart-contracts/contracts/core/connext/interfaces/IConnext.sol";
- 
-import {IConstantFlowAgreementV1} from 
-"@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/IConstantFlowAgreementV1.sol";
-
-import {
-    ISuperfluid,
-    ISuperToken,
-    SuperAppDefinitions
-} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
-
-import {
-    SuperAppBase
-} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperAppBase.sol";
+import { IDestinationPool } from "../interfaces/IDestinationPool.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IConnext } from "@connext/smart-contracts/contracts/core/connext/interfaces/IConnext.sol";
+import { IConstantFlowAgreementV1 } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/IConstantFlowAgreementV1.sol";
+import { ISuperfluid, ISuperToken, SuperAppDefinitions } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+import { SuperAppBase } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperAppBase.sol";
 
 error Unauthorized();
 error InvalidAgreement();
@@ -49,24 +38,19 @@ contract OriginPool is SuperAppBase {
 
     /// @dev Nomad Domain of this contract. Goreli testnet
     uint32 public immutable originDomain = 1735353714;
-
     /// @dev Nomad Domain of the destination contract. Mumbai testnet
     uint32 public immutable destinationDomain = 9991;
-
     /// @dev Destination contract address
     address public destination;
-    uint256 public cost = 1.0005003e18;
-    // uint256 public relayerFeeCost = 0.10005003e18;
+    uint256 public cost = 1.0005003e18; // amount of TEST tokens to send on Destination
 
     /// @dev Connext contracts.
     IConnext public immutable connext = IConnext(0xFCa08024A6D4bCc87275b1E4A1E22B71fAD7f649);
-
     /// @dev Superfluid contracts.
     ISuperfluid public immutable host = ISuperfluid(0x22ff293e14F1EC3A09B137e9e06084AFd63adDF9);
     IConstantFlowAgreementV1 public immutable cfa = IConstantFlowAgreementV1(0xEd6BcbF6907D4feEEe8a8875543249bEa9D308E8);
     ISuperToken public immutable token = ISuperToken(0x3427910EBBdABAD8e02823DFe05D34a65564b1a0); // TESTx token
     IERC20 public erc20Token = IERC20(0x7ea6eA49B0b0Ae9c5db7907d139D9Cd3439862a1); // TEST token
-
 
     /// @dev Validates callbacks.
     /// @param _agreementClass MUST be CFA.
@@ -99,8 +83,6 @@ contract OriginPool is SuperAppBase {
     bool done;
     error Done();
     function setDomain(address _destination) external {
-        // if (done) revert Done();
-        // done = true;
         destination = _destination;
     }
 
