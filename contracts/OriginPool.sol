@@ -32,12 +32,16 @@ error StreamAlreadyActive();
 contract OriginPool is SuperAppBase {
 
     /// @dev Emitted when flow message is sent across the bridge.
-    /// @param account Streamer account (only one-to-one address streaming for now).
     /// @param flowRate Flow Rate, unadjusted to the pool.
-    event FlowMessageSent(
-        address indexed account,
-        int96 flowRate
-    );
+    event FlowStartMessage(address indexed sender, address indexed receiver, int96 flowRate, uint256 startTime);
+    event FlowTopupMessage(address indexed sender, address indexed receiver, int96 newFlowRate, uint256 topupTime, uint256 endTime);
+    event FlowEndMessage(address indexed sender, address indexed receiver, int96 flowRate);
+
+    enum StreamOptions {
+        START,
+        TOPUP,
+        END
+    }
 
     /// @dev Emitted when rebalance message is sent across the bridge.
     /// @param amount Amount rebalanced (sent).
@@ -74,24 +78,7 @@ contract OriginPool is SuperAppBase {
         _;
     }
 
-    constructor(
-        // uint32 _originDomain,
-        // uint32 _destinationDomain,
-        // // address _destination,
-        // IConnext _connext,
-        // ISuperfluid _host,
-        // IConstantFlowAgreementV1 _cfa,
-        // ISuperToken _token
-    ) {
-        // originDomain = _originDomain;
-        // destinationDomain = _destinationDomain;
-        // // destination = _destination;
-        // connext = _connext;
-        // executor = _connext.executor();
-        // host = _host;
-        // cfa = _cfa;
-        // token = _token;
-
+    constructor() {
         // surely this can't go wrong
         IERC20(token.getUnderlyingToken()).approve(address(connext), type(uint256).max);
 
@@ -104,6 +91,9 @@ contract OriginPool is SuperAppBase {
         );
         console.log("Address performing the approval", msg.sender);
     }
+
+    receive() payable external {}
+    fallback() external payable {}
 
     // demoday hack. this is not permanent.
     bool done;
@@ -123,57 +113,39 @@ contract OriginPool is SuperAppBase {
         _sendRebalanceMessage();
     }
 
+    function _sendFlowMessage(string memory streamActionType, address sender, address receiver,  int96 flowRate, uint256 relayerFee, uint256 slippage) external payable {
+        uint256 buffer; 
+        erc20Token.transferFrom(sender, address(this), cost); // here the account is my wallet account
+        erc20Token.approve(address(connext), cost);
+        // erc20Token.downgrade(buffer); 
+        // encode call
+        // bytes memory callData = abi.encodeCall(
+        //     IDestinationPool(destination).receiveFlowMessage,
+        //     (account, flowRate)
+        // ); 
+
+        bytes memory callData = abi.encode(streamActionType, sender, receiver, flowRate, block.timestamp);
+        uint256 relayerFee = relayerFee; // 30000000000000000;
+        uint256 slippage = slippage;
+        connext.xcall{value: relayerFee}(
+            destinationDomain,               // _destination: Domain ID of the destination chain
+            destination,                     // _to: address receiving the funds on the destination
+            address(erc20Token),      // _asset: address of the token contract
+            msg.sender,                      // _delegate: address that can revert or forceLocal on destination
+            cost,                         // _amount: amount of tokens to transfer
+            slippage,                        // _slippage: the maximum amount of slippage the user will accept in BPS
+            callData                         // _callData
+        );
+        emit FlowStartMessage(msg.sender, receiver, flowRate, block.timestamp);
+    }
+
+    // function callFlow(uint256 flowRate) external {
+    //     _sendFlowMessage{value: 0.03 ether}(msg.sender, flowRate, 30000000000000000, 300);
+    // }
+
     // //////////////////////////////////////////////////////////////
-    // SUPER APP CALLBACKS
+    // flow -> send lumpsum TEST to originPool -> bridge to destination -> upgrade to TESTx on destination -> stream
     // //////////////////////////////////////////////////////////////
-    function afterAgreementCreated(
-        ISuperToken superToken,
-        address agreementClass,
-        bytes32 agreementId,
-        bytes calldata agreementData,
-        bytes calldata, // cbdata
-        bytes calldata ctx
-    ) external override isCallbackValid(agreementClass, superToken) returns (bytes memory) {
-        (address sender, ) = abi.decode(agreementData, (address,address));
-
-        ( , int96 flowRate, , ) = cfa.getFlowByID(superToken, agreementId);
-        console.log("Calling afterAgreementCreated");
-        // _sendFlowMessage(sender, flowRate);
-
-        return ctx;
-    }
-
-    function afterAgreementUpdated(
-        ISuperToken superToken,
-        address agreementClass,
-        bytes32 agreementId,
-        bytes calldata agreementData,
-        bytes calldata, // cbdata
-        bytes calldata ctx
-    ) external override isCallbackValid(agreementClass, superToken) returns (bytes memory) {
-        (address sender, ) = abi.decode(agreementData, (address, address));
-
-        ( , int96 flowRate, , ) = cfa.getFlowByID(superToken, agreementId);
-        console.log("Calling afterAgreementUpgraded");
-        // _sendFlowMessage(sender, flowRate);
-
-        return ctx;
-    }
-
-    function afterAgreementTerminated(
-        ISuperToken superToken,
-        address agreementClass,
-        bytes32,
-        bytes calldata agreementData,
-        bytes calldata, // cbdata
-        bytes calldata ctx
-    ) external override isCallbackValid(agreementClass, superToken) returns (bytes memory) {
-        (address sender, ) = abi.decode(agreementData, (address,address));
-        console.log("calling afterAgreementTerminated");
-        // _sendFlowMessage(sender, 0);
-
-        return ctx;
-    }
 
     // //////////////////////////////////////////////////////////////
     // MESSAGE SENDERS
@@ -202,40 +174,5 @@ contract OriginPool is SuperAppBase {
         emit RebalanceMessageSent(balance);
     }
  
-    /// @dev Sends the flow message across the bridge.
-    /// @dev This is a payable function, send ETH equivalant amount of relayerFee to this xcall function
-    /// @param account The account streaming.
-    /// @param flowRate Flow rate, unadjusted. 
-    function _sendFlowMessage(address account, int96 flowRate, uint256 relayerCost, uint256 slippageCost) external payable {
-        uint256 buffer; 
-        // if (flowRate > 0) {
-        //     // we take a second buffer for the outpool
-        //     buffer = cfa.getDepositRequiredForFlowRate(token, flowRate);
-        //     token.transferFrom(account, address(this), buffer);
-        //     token.approve(address(connext), cost);
-        //     token.downgrade(buffer);
-        // }
-        erc20Token.transferFrom(account, address(this), cost);
-        erc20Token.approve(address(connext), cost);
-        // erc20Token.downgrade(buffer); 
-        // encode call
-        // bytes memory callData = abi.encodeCall(
-        //     IDestinationPool(destination).receiveFlowMessage,
-        //     (account, flowRate)
-        // );
-
-        bytes memory callData = abi.encode("pingIncrement sample text");
-        uint256 relayerFee = relayerCost;
-        uint256 slippage = slippageCost;
-        connext.xcall{value: relayerFee}(
-            destinationDomain,               // _destination: Domain ID of the destination chain
-            destination,                     // _to: address receiving the funds on the destination
-            address(erc20Token),      // _asset: address of the token contract
-            msg.sender,                      // _delegate: address that can revert or forceLocal on destination
-            cost,                         // _amount: amount of tokens to transfer
-            slippage,                        // _slippage: the maximum amount of slippage the user will accept in BPS
-            callData                         // _callData
-        );
-        emit FlowMessageSent(account, flowRate);
-    }
+    
 }

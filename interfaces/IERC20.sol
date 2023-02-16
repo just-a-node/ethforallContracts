@@ -5,7 +5,7 @@ interface IERC20{
 
     function transferFrom(address A, address B, uint C) external view returns(bool);
 
-    function approve() external view returns(uint256);
+    function approve(address sender, uint256 amount) external view returns(uint256);
 
     function decimals() external view returns(uint256);
 
