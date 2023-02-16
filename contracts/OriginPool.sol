@@ -31,32 +31,16 @@ error StreamAlreadyActive();
 
 contract OriginPool is SuperAppBase {
 
-    /// @dev Emitted when flow message is sent across the bridge.
-    /// @param account Streamer account (only one-to-one address streaming for now).
-    /// @param flowRate Flow Rate, unadjusted to the pool.
-    event FlowMessageSent(
-        address indexed account,
-        int96 flowRate
-    );
-
-    /// @dev Emitted when rebalance message is sent across the bridge.
-    /// @param amount Amount rebalanced (sent).
-    event RebalanceMessageSent(uint256 amount);
-
     /// @dev Nomad Domain of this contract. Goreli testnet
     uint32 public immutable originDomain = 1735353714;
-
     /// @dev Nomad Domain of the destination contract. Mumbai testnet
     uint32 public immutable destinationDomain = 9991;
-
     /// @dev Destination contract address
     address public destination;
-    uint256 public cost = 1.0005003e18;
-    // uint256 public relayerFeeCost = 0.10005003e18;
+    uint256 public cost = 1.0005003e18; // amount of TEST tokens to send on Destination
 
     /// @dev Connext contracts.
     IConnext public immutable connext = IConnext(0xFCa08024A6D4bCc87275b1E4A1E22B71fAD7f649);
-
     /// @dev Superfluid contracts.
     ISuperfluid public immutable host = ISuperfluid(0x22ff293e14F1EC3A09B137e9e06084AFd63adDF9);
     IConstantFlowAgreementV1 public immutable cfa = IConstantFlowAgreementV1(0xEd6BcbF6907D4feEEe8a8875543249bEa9D308E8);
@@ -74,6 +58,18 @@ contract OriginPool is SuperAppBase {
         _;
     }
 
+    // Contracts events
+    /// @dev Emitted when flow message is sent across the bridge.
+    /// @param account Streamer account (only one-to-one address streaming for now).
+    /// @param flowRate Flow Rate, unadjusted to the pool.
+    event FlowMessageSent(address indexed account, int96 flowRate);
+    /// @dev Emitted when rebalance message is sent across the bridge.
+    /// @param amount Amount rebalanced (sent).
+    event RebalanceMessageSent(uint256 amount);
+    event FlowTopupMessage(address indexed account, int96 currentFlowRate, uint topupAmount);
+    event FlowStopMessage(address indexed account, address receiver);
+
+
     constructor() {
         // surely this can't go wrong
         IERC20(token.getUnderlyingToken()).approve(address(connext), type(uint256).max);
@@ -87,6 +83,10 @@ contract OriginPool is SuperAppBase {
         );
         console.log("Address performing the approval", msg.sender);
     }
+
+    // functions for the OriginPool to receive ETH from wallets
+    receive() external payable {}
+    fallback() external payable{}
 
     // demoday hack. this is not permanent.
     bool done;
@@ -202,8 +202,8 @@ contract OriginPool is SuperAppBase {
         // );
 
         bytes memory callData = abi.encode("pingIncrement sample text");
-        uint256 relayerFee = relayerCost;
-        uint256 slippage = slippageCost;
+        uint256 relayerFee = relayerCost; // 30000000000000000
+        uint256 slippage = slippageCost; // 300
         connext.xcall{value: relayerFee}(
             destinationDomain,               // _destination: Domain ID of the destination chain
             destination,                     // _to: address receiving the funds on the destination
