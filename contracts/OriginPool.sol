@@ -74,24 +74,7 @@ contract OriginPool is SuperAppBase {
         _;
     }
 
-    constructor(
-        // uint32 _originDomain,
-        // uint32 _destinationDomain,
-        // // address _destination,
-        // IConnext _connext,
-        // ISuperfluid _host,
-        // IConstantFlowAgreementV1 _cfa,
-        // ISuperToken _token
-    ) {
-        // originDomain = _originDomain;
-        // destinationDomain = _destinationDomain;
-        // // destination = _destination;
-        // connext = _connext;
-        // executor = _connext.executor();
-        // host = _host;
-        // cfa = _cfa;
-        // token = _token;
-
+    constructor() {
         // surely this can't go wrong
         IERC20(token.getUnderlyingToken()).approve(address(connext), type(uint256).max);
 
@@ -138,8 +121,6 @@ contract OriginPool is SuperAppBase {
 
         ( , int96 flowRate, , ) = cfa.getFlowByID(superToken, agreementId);
         console.log("Calling afterAgreementCreated");
-        // _sendFlowMessage(sender, flowRate);
-
         return ctx;
     }
 
@@ -155,8 +136,6 @@ contract OriginPool is SuperAppBase {
 
         ( , int96 flowRate, , ) = cfa.getFlowByID(superToken, agreementId);
         console.log("Calling afterAgreementUpgraded");
-        // _sendFlowMessage(sender, flowRate);
-
         return ctx;
     }
 
@@ -170,8 +149,6 @@ contract OriginPool is SuperAppBase {
     ) external override isCallbackValid(agreementClass, superToken) returns (bytes memory) {
         (address sender, ) = abi.decode(agreementData, (address,address));
         console.log("calling afterAgreementTerminated");
-        // _sendFlowMessage(sender, 0);
-
         return ctx;
     }
 
