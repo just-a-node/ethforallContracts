@@ -9,7 +9,7 @@ const hre = require("hardhat");
 async function main() {
 
   const DestinationPool = await hre.ethers.getContractFactory("DestinationPool");
-  const destinationPool = await DestinationPool.deploy("0x13576E2eeB9696e63f10DD2778697c84EAaF4872");
+  const destinationPool = await DestinationPool.deploy("0xA549Bd62BBD6C1110Bc4e63999D958B848E9F0a2");
 
   await destinationPool.deployed();
 

@@ -21,7 +21,7 @@ import {
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 
 // import "../interfaces/IERC4626.sol";
-import "../interfaces/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // import "https://github.com/transmissions11/solmate/blob/main/src/mixins/ERC4626.sol";
@@ -168,7 +168,7 @@ contract DestinationPool is IXReceiver, AutomationCompatibleInterface, IDestinat
         // functions in this contract.
         console.log("Received calldata ", callData);
         updatePing(_originSender); 
-        // approveSuperToken(address(_asset), _amount);
+        approveSuperToken(address(_asset), _amount);
     }
 
     event UpgradeToken(address indexed baseToken, uint256 amount);
